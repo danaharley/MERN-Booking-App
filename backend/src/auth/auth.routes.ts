@@ -1,16 +1,15 @@
 import express, { Request, Response } from "express";
-import jwt from "jsonwebtoken";
 import { check, validationResult } from "express-validator";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
-import User from "./user.model";
+import User from "../user/user.model";
 
 const router = express.Router();
 
 router.post(
-  "/register",
+  "/login",
   [
-    check("firstName", "Firstname is required.").isString(),
-    check("lastName", "Lastname is required.").isString(),
     check("email", "Email is required.").isEmail(),
     check("password", "Password must be at least 8 charactes.").isLength({
       min: 3,
@@ -22,15 +21,18 @@ router.post(
     if (!errors.isEmpty())
       return res.status(400).json({ message: errors.array() });
 
+    const { email, password } = req.body;
+
     try {
-      let user = await User.findOne({ email: req.body.email });
+      const user = await User.findOne({ email: req.body.email });
 
-      if (user)
-        return res.status(400).json({ message: "User already exists!" });
+      if (!user)
+        return res.status(400).json({ message: "Invalid Credentials" });
 
-      user = new User(req.body);
+      const isMatch = await bcrypt.compare(password, user.password);
 
-      await user.save();
+      if (!isMatch)
+        return res.status(400).json({ message: "Invalid Credentials" });
 
       const token = jwt.sign(
         {
@@ -48,8 +50,8 @@ router.post(
         maxAge: 86400000, // 1 day
       });
 
-      return res.sendStatus(200);
-    } catch (error: any) {
+      return res.status(200).json({ userId: user._id });
+    } catch (error) {
       console.log(error);
       res.status(500).send({ message: "Something went wrong!" });
     }
