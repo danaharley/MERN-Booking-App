@@ -54,6 +54,19 @@ router.post(
   }
 );
 
+router.delete("/logout", async (req: Request, res: Response) => {
+  try {
+    res.clearCookie("auth_token");
+
+    return res
+      .status(200)
+      .json({ message: "You have been successfully logged out" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).send({ message: "Something went wrong!" });
+  }
+});
+
 router.get("/validate-token", verifyToken, (req: Request, res: Response) => {
   res.status(200).send({ userId: req.userId });
 });
