@@ -9,10 +9,10 @@ const router = express.Router();
 router.post(
   "/register",
   [
-    check("firstName", "Firstname is required.").isString(),
-    check("lastName", "Lastname is required.").isString(),
+    check("firstName", "First Name is required.").isString(),
+    check("lastName", "Last Name is required.").isString(),
     check("email", "Email is required.").isEmail(),
-    check("password", "Password must be at least 8 charactes.").isLength({
+    check("password", "Password must be at least 3 charactes.").isLength({
       min: 3,
     }),
   ],
@@ -32,15 +32,9 @@ router.post(
 
       await user.save();
 
-      const token = jwt.sign(
-        {
-          user_id: user.id,
-        },
-        process.env.JWT_SECRET_KEY!,
-        {
-          expiresIn: "1d",
-        }
-      );
+      const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET_KEY!, {
+        expiresIn: "1d",
+      });
 
       res.cookie("auth_token", token, {
         httpOnly: true,
@@ -48,7 +42,9 @@ router.post(
         maxAge: 86400000, // 1 day
       });
 
-      return res.sendStatus(200);
+      return res
+        .status(200)
+        .send({ message: "Your account has been created." });
     } catch (error: any) {
       console.log(error);
       res.status(500).send({ message: "Something went wrong!" });
